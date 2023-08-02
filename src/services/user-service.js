@@ -1,8 +1,12 @@
-import { registerUserValidation } from "../validations/user-validation.js";
+import {
+  loginUserValidation,
+  registerUserValidation,
+} from "../validations/user-validation.js";
 import { validate } from "../validations/validation.js";
 import { prismaClient } from "../application/database.js";
 import { ResponseError } from "../errors/response-error.js";
 import bcrypt from "bcrypt";
+import { v4 as uuid } from "uuid";
 
 const register = async (request) => {
   const user = validate(registerUserValidation, request);
@@ -28,4 +32,44 @@ const register = async (request) => {
   });
 };
 
-export default { register };
+const login = async (request) => {
+  const loginRequest = validate(loginUserValidation, request);
+
+  /** find user */
+  const user = await prismaClient.user.findUnique({
+    where: {
+      username: loginRequest.username,
+    },
+    select: {
+      username: true,
+      password: true,
+    },
+  });
+
+  /** checking user */
+  if (!user) {
+    throw new ResponseError(401, "Username or password wrong");
+  }
+
+  /** checking password */
+  const isPasswordValid = bcrypt.compare(loginRequest.password, user.password);
+  if (!isPasswordValid) {
+    throw new ResponseError(400, "Username or password wrong");
+  }
+
+  const token = uuid().toString();
+
+  return prismaClient.user.update({
+    data: {
+      token: token,
+    },
+    where: {
+      username: user.username,
+    },
+    select: {
+      token: true,
+    },
+  });
+};
+
+export default { register, login };
