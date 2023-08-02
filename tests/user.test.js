@@ -76,8 +76,6 @@ describe("POST /api/users/login", () => {
       password: "secret",
     });
 
-    console.log(result.body.data.token);
-
     expect(result.status).toBe(200);
     expect(result.body.data.token).toBeDefined();
     expect(result.body.data.token).not.toBe("test");
@@ -98,6 +96,36 @@ describe("POST /api/users/login", () => {
       username: "julianto",
       password: "hehe",
     });
+
+    expect(result.status).toBe(401);
+    expect(result.body.errors).toBeDefined();
+  });
+});
+
+describe("GET /api/users/current", () => {
+  beforeEach(async () => {
+    await createTestUser();
+  });
+
+  afterEach(async () => {
+    await removeTestUser();
+  });
+
+  it("should can get current user", async () => {
+    const result = await supertest(web)
+      .get("/api/users/current")
+      .set("authorization", "test");
+
+    expect(result.status).toBe(200);
+    expect(result.body.data.username).toBe("test");
+  });
+
+  it("should reject when token is invalid", async () => {
+    const result = await supertest(web)
+      .get("/api/users/current")
+      .set("authorization", "brobro");
+
+    console.log(result.body);
 
     expect(result.status).toBe(401);
     expect(result.body.errors).toBeDefined();

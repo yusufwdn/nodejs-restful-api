@@ -1,4 +1,5 @@
 import {
+  getUserValidation,
   loginUserValidation,
   registerUserValidation,
 } from "../validations/user-validation.js";
@@ -72,4 +73,24 @@ const login = async (request) => {
   });
 };
 
-export default { register, login };
+const get = async (username) => {
+  username = validate(getUserValidation, username);
+
+  const user = await prismaClient.user.findUnique({
+    where: {
+      username: username,
+    },
+    select: {
+      username: true,
+      name: true,
+    },
+  });
+
+  if (!user) {
+    throw new ResponseError(404, "User not found");
+  }
+
+  return user;
+};
+
+export default { register, login, get };
